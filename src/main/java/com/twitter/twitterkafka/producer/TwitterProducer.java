@@ -11,9 +11,15 @@ import com.twitter.hbc.core.processor.StringDelimitedProcessor;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 import lombok.Data;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +41,8 @@ public class TwitterProducer {
 
     String consumerKey = "p4wQEpjIt4x80toNUAR5KN1eA";
     String consumerSecret= "I1ByXPt2s7KfD7H65ZpcHxB26sfvLYs7eXIa1yZ3fNXBpfUgaZ";
+
+
     public TwitterProducer(){
 
     };
@@ -49,7 +57,18 @@ public class TwitterProducer {
     }
     public void run() {
         /** Set up your blocking queues: Be sure to size these properly based on expected TPS of your stream */
+
         BlockingQueue<String> msgQueue = new LinkedBlockingQueue<String>(100000);
+
+        //kafka producer
+        Properties properties = new Properties();
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,"localhost:9092");
+        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+        KafkaProducer<String,String> kafkaProducer = new KafkaProducer<String, String>(properties);
+
+
 
         //Create twitter client
         Client client = twitterClient(msgQueue);
@@ -67,6 +86,7 @@ public class TwitterProducer {
             }
             if(msg!=null) {
                 System.out.println(msg);
+                ProducerRecord<String,String> producerRecord = new ProducerRecord<>("twittertopic",msg);
             }
         }
 
